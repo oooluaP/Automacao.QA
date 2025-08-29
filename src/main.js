@@ -153,8 +153,11 @@ async function main() {
     });
 
     $cartCheckout.addEventListener('click', () => {
+        alert('Compra finalizada!');
         produtos.forEach(produto => {
             produto.quantity = 0;
+            
+            
 
         });
 
