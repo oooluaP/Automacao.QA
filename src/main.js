@@ -1,171 +1,119 @@
-
 import "./style.css";
 
-const pegarPersonagens = async () => {
-    const res = await fetch ("https://rickandmortyapi.com/api/character/1,2,3");
-    const json = await res.json();
-    return json
-};
+// Antes: pegarPersonagens
+async function buscarDadosAPI() {
+    const resposta = await fetch("https://rickandmortyapi.com/api/character/1,2,3");
+    return resposta.json();
+}
 
+async function iniciarApp() {
+    // Antes: res
+    let dadosAPI = await buscarDadosAPI();
 
+    // Antes: pegarDoLocalStorage
+    function carregarLocalStorage() {
+        let itens = localStorage.getItem("itensCarrinho");
+        return itens ? JSON.parse(itens) : [];
+    }
 
-async function main() {
-    const res = await pegarPersonagens();
+    // Antes: produtosDoLocalStorage
+    let itensSalvos = carregarLocalStorage();
 
-    const PegarDoLocalStorage = () => {
+    // Antes: produtos
+    let listaItens = dadosAPI.map(item => ({
+        id: item.id,
+        titulo: item.name,
+        foto: item.image,
+        quantidade: itensSalvos.find((p) => p.id === item.id)?.quantidade || 0,
+    }));
 
-        const produtos = localStorage.getItem("produtos");
-        return produtos ? JSON.parse(produtos) : [];
-    };
+    // Antes: $products, $cartProducts, $cartTotal, $cartCheckout
+    let $listaProdutos = document.querySelector("#products");
+    let $itensCarrinho = document.querySelector("#cart_products");
+    let $totalCarrinho = document.querySelector("#cart_total");
+    let $finalizarCompra = document.querySelector("#cart_checkout");
 
-    const produtosDoLocalStorage = PegarDoLocalStorage();
-    
+    // Antes: salvarNoLocalStorage
+    function salvarItens() {
+        localStorage.setItem("itensCarrinho", JSON.stringify(listaItens));
+    }
 
+    // Antes: atualizarTela
+    function renderizarTela() {
+        salvarItens();
 
-    let produtos = res.map(item => {
-        return {
-            id: item.id,
-            description: item.name,
-            image: item.image,
-            quantity: produtosDoLocalStorage.find((p) => p.id === item.id)?.quantity || 0,
-        }
-    });    
+        let total = listaItens.reduce((soma, p) => soma + p.quantidade, 0);
 
+        $totalCarrinho.textContent = total;
+        $finalizarCompra.disabled = total <= 0;
 
-    
-    const $products = document.querySelector("#products");
-    const $cartProducts = document.querySelector("#cart_products");
-    const $cartTotal = document.querySelector("#cart_total");
-    const $cartCheckout = document.querySelector("#cart_checkout");
-
-    const salvarNoLocalStorage = () => {
-        localStorage.setItem("produtos", JSON.stringify(produtos));
-    };
-
-
-    const atualizarTela = () =>{ 
-
-        salvarNoLocalStorage();
-
-        let total = 0;
-        produtos.forEach((produto) => {
-            total += produto.quantity;
-        });
-    
-        $cartTotal.textContent = total;
-
-        $cartCheckout.disabled = total <=0;
-
-
-
-        const html = produtos.map((produto) => {
-            return `
+        let html = listaItens.map(produto => `
             <div class="item" data-id="${produto.id}">
               <div class="item__group">
-                <img src="${produto.image}" alt="" class="sticker" />
-                <h3>${produto.description}</h3>
+                <img src="${produto.foto}" alt="" class="sticker" />
+                <h3>${produto.titulo}</h3>
               </div>
               <div class="item__group">
                 <div class="quantity-control">
                   <button type="button" class="quantity-btn decrease">-</button>
-                  <span class="quantity-value">${produto.quantity}</span>
+                  <span class="quantity-value">${produto.quantidade}</span>
                   <button type="button" class="quantity-btn increase">+</button>
                 </div>
                 <button type="button" class="delete-btn" id="add-to-cart">
                   &times;
                 </button>
               </div>
-            </div> 
-        `;
-        
-         });
+            </div>`).join("");
 
-            $products.innerHTML = html.join(''); 
+        $listaProdutos.innerHTML = html;
 
-
-            const html2 = produtos.map((produto) => {
-            if(produto.quantity <= 0) {
-                return "";
-            }     
-            
-             return `
+        let html2 = listaItens
+            .filter(produto => produto.quantidade > 0)
+            .map(produto => `
                 <div class="item">
-                 <div class="item__group">
-                    <img src="${produto.image}" alt="" class="image" />
-                    <h3>${produto.description}</h3>
+                    <div class="item__group">
+                        <img src="${produto.foto}" alt="" class="image" />
+                        <h3>${produto.titulo}</h3>
                     </div>
                     <div class="item__group">
-                    <output class="quantity-value">${produto.quantity}</output>
+                        <output class="quantity-value">${produto.quantidade}</output>
                     </div>
-                    </div>  
-                    `;
-             });
+                </div>`).join("");
 
-        $cartProducts.innerHTML = html2.join('');    
-    };
-    
+        $itensCarrinho.innerHTML = html2;
+    }
 
+    // Antes: $products.addEventListener...
+    $listaProdutos.addEventListener("click", function(event) {
+        let $item = event.target.closest(".item");
+        let id = Number($item.dataset.id);
 
+        let produto = listaItens.find(p => p.id === id);
 
-    
-    $products.addEventListener('click', event => {
-        
-        const $item = event.target.closest(".item");
+        if (event.target.classList.contains("increase")) {
+            produto.quantidade++;
+            renderizarTela();
+        }
 
-        const id = Number($item.dataset.id);       
+        if (event.target.classList.contains("decrease")) {
+            if (produto.quantidade > 0) produto.quantidade--;
+            renderizarTela();
+        }
 
-        if (event.target.classList.contains("increase")){
-            console.log("adicionar");
-
-           produtos.forEach((produto) => {
-            if (produto.id === id) {
-                produto.quantity = produto.quantity + 1;
-            }
-           });
-           atualizarTela();
-
-        };
-        if (event.target.classList.contains("decrease")){
-            console.log("subtrair")           
-            produtos.forEach((produto) => {
-            if (produto.id === id) {
-                const qtd = produto.quantity - 1;
-                if (qtd >= 0) {
-                produto.quantity = produto.quantity - 1;
-                };
-            }
-           });
-           atualizarTela();
-        };
-     
-        
-        if (event.target.classList.contains("delete-btn")){
-            console.log("excluir")
-            produtos.forEach((produto) => {
-            if (produto.id === id) {
-                produto.quantity = 0;
-            }
-           });
-           atualizarTela();     
-            
-        };
-
+        if (event.target.classList.contains("delete-btn")) {
+            produto.quantidade = 0;
+            renderizarTela();
+        }
     });
 
-    $cartCheckout.addEventListener('click', () => {
-        alert('Compra finalizada!');
-        produtos.forEach(produto => {
-            produto.quantity = 0;
-            
-            
-
-        });
-
-        atualizarTela();
+    // Antes: $cartCheckout.addEventListener
+    $finalizarCompra.addEventListener("click", function() {
+        alert("Compra finalizada!");
+        listaItens.forEach(p => p.quantidade = 0);
+        renderizarTela();
     });
-        
-    atualizarTela();
 
-};
+    renderizarTela();
+}
 
-main();
+iniciarApp();
