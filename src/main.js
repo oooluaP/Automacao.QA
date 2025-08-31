@@ -108,7 +108,7 @@ async function iniciarApp() {
 
     // Antes: $cartCheckout.addEventListener
     $finalizarCompra.addEventListener("click", function() {
-        alert("Compra finalizada!");
+        alert("Compra finalizada, Obrigada!");
         listaItens.forEach(p => p.quantidade = 0);
         renderizarTela();
     });
